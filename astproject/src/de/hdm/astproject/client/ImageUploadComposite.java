@@ -17,7 +17,7 @@ public class ImageUploadComposite extends Composite{
 	final FormPanel form = new FormPanel();
 	VerticalPanel vPanel = new VerticalPanel(); 
 	FileUpload fileUpload = new FileUpload();
-	Label imgFormats = new Label("Nur PDF zulÃ¤ssig");
+	Label imgFormats = new Label("Nur PDF zulässig");
 		
 	/**
 	 * Referenz auf ein ImageDownloadComposite-Objekt fÃ¼r den Methodenzugriff
@@ -58,7 +58,7 @@ public class ImageUploadComposite extends Composite{
 	        	}
 	        	if (fileNameBuffer.lastIndexOf(".") == -1) {
 	        		event.cancel();
-	        		Window.alert("Die Bild-Datei konnte nicht Ã¼bernommen werden, bitte Ã¼berprÃ¼fen Sie den Dateipfad");
+	        		Window.alert("Die Bild-Datei konnte nicht übernommen werden, bitte überprüfen Sie den Dateipfad");
 	        		return;
 	        	}
 	        	String fileName = fileNameBuffer.substring(fileNameBuffer.lastIndexOf("."));
