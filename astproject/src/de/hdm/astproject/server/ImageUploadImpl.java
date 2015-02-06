@@ -1,8 +1,14 @@
 package de.hdm.astproject.server;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -18,6 +24,9 @@ import org.apache.commons.fileupload.FileItemIterator;
 import org.apache.commons.fileupload.FileItemStream;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.mime.content.ByteArrayBody;
+import org.apache.http.entity.mime.content.ContentBody;
 
 import com.google.appengine.api.urlfetch.FetchOptions;
 import com.google.appengine.api.urlfetch.HTTPMethod;
@@ -59,36 +68,69 @@ public class ImageUploadImpl extends HttpServlet {
 					}
 					
 				}
+				System.out.println(getGCEString());
 				
 				
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 		}
+		// Set response content type
+		 //  response.setContentType("text/html");
+		
+		   // Actual logic goes here.
+		 //  PrintWriter out = response.getWriter();
+		 //  out.println(getGCEString());
+		
+		
 
 	}
 	
-	public String fetch(String postdata) throws IOException {
+	public String getGCEString() {
 
-	    String surl = "http://130.211.101.46";
+	    String surl = "http://104.155.31.96:8080/servlet/test";
 
-	    URLFetchService urlFetchService = URLFetchServiceFactory.getURLFetchService();
-
-	    URL url = new URL(surl);
-
-	    FetchOptions fetchOptions = FetchOptions.Builder.withDefaults();
-	    fetchOptions.doNotValidateCertificate();
-	    fetchOptions.setDeadline(60D);
-
-	    HTTPRequest request = new HTTPRequest(url, HTTPMethod.POST, fetchOptions);
-	    request.setPayload(postdata.getBytes());
-	    
-	    HTTPResponse httpResponse = urlFetchService.fetch(request);
 	    String response = "";
-	    if (httpResponse.getResponseCode() == HttpURLConnection.HTTP_OK) {
-	      response = new String(httpResponse.getContent());
-	    } 
+	    try {	      
+	      MultipartEntity mpEntity  = new MultipartEntity();
+	      ContentBody cbFile = new ByteArrayBody(buffer, "application/pdf", "w.jpg");
+	      mpEntity.addPart("source", cbFile);
 
+	      URL url = new URL(surl);                   
+	      HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+	      connection.setDoOutput(true);
+	      connection.setConnectTimeout(30000);
+	      connection.setReadTimeout(30000);
+	      connection.setRequestMethod("POST");
+	      connection.addRequestProperty("Content-length", mpEntity.getContentLength()+"");
+	      connection.addRequestProperty(mpEntity.getContentType().getName(), mpEntity.getContentType().getValue());
+
+	      mpEntity.writeTo(connection.getOutputStream());
+
+	      if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+	         System.out.println("http success!");
+	      }else{
+	         System.out.println("http failed:"+connection.getResponseCode());
+	      }
+
+	      int respCode = connection.getResponseCode();
+	      int httpconCode = HttpURLConnection.HTTP_OK;
+	      
+	      if (respCode == httpconCode) {
+	        String inputLine;
+	        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
+	        while ((inputLine = reader.readLine()) != null) {
+	          response += inputLine;
+	        }
+	        reader.close();
+	      } 
+	    } catch (MalformedURLException e) {
+	      e.printStackTrace();
+	    } catch (IOException e) {
+	      e.printStackTrace();
+	    } 
 	    return response;
-	  }
+	}
+	
+
 	
 }
