@@ -43,7 +43,7 @@ public class ImageUploadComposite extends Composite{
 			@Override
 			public void onSubmitComplete(SubmitCompleteEvent event) {
 				
-				//idc.loadImg();
+				idc.loadImg();
 									
 			}
 	    	

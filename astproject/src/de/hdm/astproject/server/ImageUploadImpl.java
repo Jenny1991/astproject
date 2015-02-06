@@ -44,6 +44,7 @@ public class ImageUploadImpl extends HttpServlet {
 	byte[] buffer;
 	int imgID;
 	ImageDownloadImpl idi = new ImageDownloadImpl();
+	byte[] responseBytes;
 	
 	public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		ServletFileUpload upload = new ServletFileUpload();
@@ -68,8 +69,13 @@ public class ImageUploadImpl extends HttpServlet {
 					}
 					
 				}
-				System.out.println(getGCEString());
+				getGCEString();
+				System.out.println(responseBytes.length);
 				
+				ImageDownloadImpl.setBbb(responseBytes);
+				
+//				response.setContentType("image/jpg");
+//				response.getOutputStream().write(responseBytes,0,responseBytes.length);
 				
 			} catch (Exception e) {
 				throw new RuntimeException(e);
@@ -85,7 +91,7 @@ public class ImageUploadImpl extends HttpServlet {
 
 	}
 	
-	public String getGCEString() {
+	public void getGCEString() {
 
 	    String surl = "http://104.155.31.96:8080/servlet/test";
 
@@ -116,19 +122,21 @@ public class ImageUploadImpl extends HttpServlet {
 	      int httpconCode = HttpURLConnection.HTTP_OK;
 	      
 	      if (respCode == httpconCode) {
-	        String inputLine;
-	        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
-	        while ((inputLine = reader.readLine()) != null) {
-	          response += inputLine;
-	        }
-	        reader.close();
+//	        String inputLine;
+//	        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
+//	        while ((inputLine = reader.readLine()) != null) {
+//	          response += inputLine;
+//	        }
+//	        reader.close();
+	        
+	        responseBytes = IOUtils.toByteArray(connection.getInputStream());
 	      } 
 	    } catch (MalformedURLException e) {
 	      e.printStackTrace();
 	    } catch (IOException e) {
 	      e.printStackTrace();
 	    } 
-	    return response;
+//	    return response;
 	}
 	
 
