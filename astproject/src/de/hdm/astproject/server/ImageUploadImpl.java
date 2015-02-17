@@ -1,19 +1,10 @@
 package de.hdm.astproject.server;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.Vector;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -36,67 +27,83 @@ import com.google.appengine.api.urlfetch.URLFetchService;
 import com.google.appengine.api.urlfetch.URLFetchServiceFactory;
 
 /**
- * The server-side implementation of the RPC service.
+ * Konkretisierung eines HttpServlets, welches die hochgeladene PDF-Datei
+ * entgegen nimmt, diese an das Servlet auf der GoogleComputeEngine weiterleitet
+ * und als Antwort das daraus generierte Bild in Empfang nimmt. Das Empfangene
+ * Bild anschließend als statische Variable der Klasse ImageDownloadImpl gesetzt.
  */
 @SuppressWarnings("serial")
 public class ImageUploadImpl extends HttpServlet {
 	
+	/**
+	 *  Variable welche Dateien in Form von einem Byte-Array referenzieren kann,
+	 *  in diesem konkreten Fall das hochgeladene PDF-File
+	 */
 	byte[] buffer;
-	int imgID;
-	ImageDownloadImpl idi = new ImageDownloadImpl();
+	
+	/**
+	 *  Variable welche Dateien in Form von einem Byte-Array referenzieren kann,
+	 *  in diesem konkreten Fall das von der GCE empfangene Bild
+	 */
 	byte[] responseBytes;
 	
+	/**
+	 * Methode die beim empfangen eines Requests vom Client aufgerufen wird
+	 */
 	public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		ServletFileUpload upload = new ServletFileUpload();
 		try {
+			
+			/*
+			 *  Referenz auf einen ItemIterator um über die einzelnen
+			 *  hochgelanden Elemente (meherer Dateien, Textinfors etc.)
+			 *  mittels Schleife referenzieren zu können.
+			 */			
 			FileItemIterator iter = upload.getItemIterator(request);
 
-				while (iter.hasNext()) {
-					FileItemStream item = iter.next();
-					InputStream stream = item.openStream();	
-					
-					if (item.isFormField()) {
-						byte[] str = new byte[stream.available()];
-			            stream.read(str);
-			            String pFieldValue = new String(str,"UTF8");
-			            imgID = new Integer(pFieldValue);
-					}
-					else {
-						byte[] bb = IOUtils.toByteArray(stream);						
-						buffer = bb;
-						idi.setBbb(buffer);
-						
-					}
+			while (iter.hasNext()) {
+				FileItemStream item = iter.next();
+				InputStream stream = item.openStream();	
+				
+				// Falls das Element im Request ein Formfeld als Ursprung hat...
+				if (item.isFormField()) {
+				}
+				// Für alle anderen Fälle bzw. wenn es sich bei dem Element um eine Datei handelt...
+				else {
+					// Einlesen der Datei in ein Byte-Array
+					byte[] bb = IOUtils.toByteArray(stream);						
+					buffer = bb;
 					
 				}
-				getGCEString();
-				System.out.println(responseBytes.length);
 				
-				ImageDownloadImpl.setBbb(responseBytes);
+			}
+			// Starten der Übertragung/ Weierleitung der erhaltenen Datei zur GoogleComputeEngine
+			getGCEString();
+			
+			// Seten der erhaltenen Bildinformationen als statische Variable in das Servlet "ImageDownloadImpl"
+			ImageDownloadImpl.setBbb(responseBytes);
 				
-//				response.setContentType("image/jpg");
-//				response.getOutputStream().write(responseBytes,0,responseBytes.length);
-				
-			} catch (Exception e) {
-				throw new RuntimeException(e);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
 		}
-		// Set response content type
-		 //  response.setContentType("text/html");
-		
-		   // Actual logic goes here.
-		 //  PrintWriter out = response.getWriter();
-		 //  out.println(getGCEString());
 		
 		
 
 	}
 	
+	/**
+	 * Erstellung eines Requests an die ComuputeEngine um das erhaltene PDF-File
+	 * zu übermitteln  und "dort" die Typumwandlung anzustoßen. Das Empfangene Bild
+	 * wird ebenfalls temporär als Byte-Array vorgehalten.
+	 */
 	public void getGCEString() {
 
+		// Adresse des GCE-Servlets
 	    String surl = "http://104.155.31.96:8080/servlet/test";
 
-	    String response = "";
-	    try {	      
+	    
+	    try {
+	    // Aufbau und Parametrisierung einer Verbindung zum GCE-Servlet
 	      MultipartEntity mpEntity  = new MultipartEntity();
 	      ContentBody cbFile = new ByteArrayBody(buffer, "application/pdf", "w.jpg");
 	      mpEntity.addPart("source", cbFile);
@@ -113,22 +120,16 @@ public class ImageUploadImpl extends HttpServlet {
 	      mpEntity.writeTo(connection.getOutputStream());
 
 	      if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-	         System.out.println("http success!");
+	         System.out.println("erfolgreich");
 	      }else{
-	         System.out.println("http failed:"+connection.getResponseCode());
+	         System.out.println("fehler:"+connection.getResponseCode());
 	      }
 
 	      int respCode = connection.getResponseCode();
 	      int httpconCode = HttpURLConnection.HTTP_OK;
 	      
 	      if (respCode == httpconCode) {
-//	        String inputLine;
-//	        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
-//	        while ((inputLine = reader.readLine()) != null) {
-//	          response += inputLine;
-//	        }
-//	        reader.close();
-	        
+	        // Ablegen des enpfangenen Bildes in ein Byte-Array
 	        responseBytes = IOUtils.toByteArray(connection.getInputStream());
 	      } 
 	    } catch (MalformedURLException e) {
@@ -136,7 +137,6 @@ public class ImageUploadImpl extends HttpServlet {
 	    } catch (IOException e) {
 	      e.printStackTrace();
 	    } 
-//	    return response;
 	}
 	
 
